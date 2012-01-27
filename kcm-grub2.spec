@@ -4,9 +4,11 @@
 %define _kde4_configkcfgdir %{_kde4_sharedir}/config.kcfg
 
 Name:           kcm-grub2
-BuildRequires:  gcc-c++
 Requires:       grub2
-BuildRequires:  kdelibs4-devel lib64magick-devel lib64hd-devel
+BuildRequires:  gcc-c++
+BuildRequires:  kdelibs4-devel 
+BuildRequires:  libhd-devel
+BuildRequires:  libmagick-devel
 License:        GPLv3+
 Url:            http://ksmanis.wordpress.com/projects/grub2-editor/
 Group:          Graphical desktop/KDE
