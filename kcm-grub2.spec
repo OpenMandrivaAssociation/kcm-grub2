@@ -1,8 +1,3 @@
-# These macros are not present on the target distribution and are provided explicitly here
-%define make_jobs %{__make} %{?_smp_mflags} VERBOSE=1
-
-%define _kde4_configkcfgdir %{_kde4_sharedir}/config.kcfg
-
 Name:           kcm-grub2
 Requires:       grub2
 License:        GPLv3+
@@ -32,7 +27,7 @@ for managing your GRUB2 configuration.
 #--------------------------------------------------------------------
 
 %prep
-%setup -n %{name}-%{version} -q
+%setup -q
 
 %build
 %cmake_kde4
