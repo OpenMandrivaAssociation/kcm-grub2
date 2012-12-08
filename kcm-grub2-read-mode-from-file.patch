@@ -1,0 +1,69 @@
+diff -Naur kcm-grub2-0.5.8//src/helper/helper.cpp kcm-grub-new//src/helper/helper.cpp
+--- kcm-grub2-0.5.8//src/helper/helper.cpp	2012-06-18 13:06:58.000000000 +0400
++++ kcm-grub-new//src/helper/helper.cpp	2012-07-27 18:22:14.830328237 +0400
+@@ -36,10 +36,11 @@
+ 
+ //Project
+ #include "../config.h"
+-#if HAVE_HD
+-#undef slots
+-#include <hd.h>
+-#endif
++
++#include <fstream>
++#include <string>
++using std::ifstream;
++using std::string;
+ 
+ Helper::Helper()
+ {
+@@ -209,24 +210,20 @@
+ {
+     Q_UNUSED(args)
+     ActionReply reply;
+-
+-#if HAVE_HD
+     QStringList gfxmodes;
+-    hd_data_t hd_data;
+-    memset(&hd_data, 0, sizeof(hd_data));
+-    hd_t *hd = hd_list(&hd_data, hw_framebuffer, 1, NULL);
+-    for (hd_res_t *res = hd->res; res; res = res->next) {
+-        if (res->any.type == res_framebuffer) {
+-            gfxmodes += QString("%1x%2x%3").arg(QString::number(res->framebuffer.width), QString::number(res->framebuffer.height), QString::number(res->framebuffer.colorbits));
+-        }
++    
++    ifstream input("/var/lib/mandriva/kde4-profiles/common/share/config/kcm-modes");
++    if(input.fail())
++    {
++	reply = ActionReply::HelperErrorReply;
++    }else{
++	string str;
++	while(getline(input,str))
++	{
++	    gfxmodes += QString("%1").arg(QString::fromStdString(str));
++	}
++	reply.addData("gfxmodes", gfxmodes);
+     }
+-    hd_free_hd_list(hd);
+-    hd_free_hd_data(&hd_data);
+-    reply.addData("gfxmodes", gfxmodes);
+-#else
+-    reply = ActionReply::HelperErrorReply;
+-#endif
+-
+     return reply;
+ }
+ ActionReply Helper::save(QVariantMap args)
+diff -Naur kcm-grub2-0.5.8//src/helper/kcmgrub2.actions kcm-grub-new//src/helper/kcmgrub2.actions
+--- kcm-grub2-0.5.8//src/helper/kcmgrub2.actions	2012-06-18 13:06:58.000000000 +0400
++++ kcm-grub-new//src/helper/kcmgrub2.actions	2012-07-27 18:33:43.148145232 +0400
+@@ -303,8 +303,7 @@
+ Description[x-test]=xxAdministrator authorization is required to probe VESA BIOS Extensionsxx
+ Description[zh_CN]=探测 VESA BIOS 扩展需要管理员权限
+ Description[zh_TW]=偵測 VESA BIOS 延伸需要管理者權限
+-Policy=auth_admin
+-Persistence=session
++Policy=yes
+ 
+ [org.kde.kcontrol.kcmgrub2.save]
+ Name=Save the GRUB2 Bootloader settings
