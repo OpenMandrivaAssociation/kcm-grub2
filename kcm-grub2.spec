@@ -5,25 +5,23 @@
 
 %define getres kcm-grub2-getres
 
-Name:           kcm-grub2
-Requires:       grub2
-BuildRequires:  gcc-c++
-BuildRequires:  kdelibs4-devel 
-BuildRequires:  libhd-devel
-BuildRequires:  pkgconfig(ImageMagick)
-License:        GPLv3+
-Url:            http://ksmanis.wordpress.com/projects/grub2-editor/
-Group:          Graphical desktop/KDE
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Summary:        A KDE Control Module for configuring the GRUB2 bootloader
-Version:        0.5.8
-Release:        2
-Source0:        %{name}-%{version}.tar.gz
-Source1:	get_res.cpp
-Source2:	%{name}.po
-
-Patch0:		kcm-grub2-read-mode-from-file.patch
+Name:			kcm-grub2
+Summary:		A KDE Control Module for configuring the GRUB2 bootloader
+Version:		0.5.8
+Release:		4
+License:		GPLv3+
+Url:			http://ksmanis.wordpress.com/projects/grub2-editor/
+Group:			Graphical desktop/KDE
+Source0:		%{name}-%{version}.tar.gz
+Source1:		get_res.cpp
+Source2:		%{name}.po
+Patch0:			kcm-grub2-read-mode-from-file.patch
 #%kde4_runtime_requires
+Requires:		grub2
+BuildRequires:	gcc-c++
+BuildRequires:	kdelibs4-devel 
+BuildRequires:	libhd-devel
+BuildRequires:	pkgconfig(ImageMagick)
 
 %description
 Smoothly integrated in KDE System Settings, it is the central place 
@@ -34,7 +32,7 @@ Author(s):
 
 
 %prep
-%setup -n %{name}-%{version} -q
+%setup -q
 cp -f %{SOURCE2} ./po/ru/kcm-grub2.po
 %apply_patches
 g++ %{SOURCE1} -l hd -o %{getres}
@@ -57,11 +55,7 @@ install -m 700 %{getres} %{buildroot}%{_sbindir}/%{getres}
 %post
 %{_sbindir}/%{getres}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 %files -f %{name}.lang
-%defattr(-,root,root)
 %doc COPYING README
 %{_datadir}/kde4/services/kcm_grub2.desktop
 %{_kde_libdir}/kde4/kcm_grub2.so
