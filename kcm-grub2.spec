@@ -1,35 +1,27 @@
 # These macros are not present on the target distribution and are provided explicitly here
-%define make_jobs %{__make} %{?_smp_mflags} VERBOSE=1
-
 %define _kde4_configkcfgdir %{_kde4_sharedir}/config.kcfg
-
 %define getres kcm-grub2-getres
 
-Name:			kcm-grub2
-Summary:		A KDE Control Module for configuring the GRUB2 bootloader
-Version:		0.5.8
-Release:		4
-License:		GPLv3+
-Url:			http://ksmanis.wordpress.com/projects/grub2-editor/
-Group:			Graphical desktop/KDE
-Source0:		%{name}-%{version}.tar.gz
-Source1:		get_res.cpp
-Source2:		%{name}.po
-Patch0:			kcm-grub2-read-mode-from-file.patch
-#%kde4_runtime_requires
-Requires:		grub2
+Summary:	A KDE Control Module for configuring the GRUB2 bootloader
+Name:		kcm-grub2
+Version:	0.5.8
+Release:	4
+License:	GPLv3+
+Url:		http://ksmanis.wordpress.com/projects/grub2-editor/
+Group:		Graphical desktop/KDE
+Source0:	%{name}-%{version}.tar.gz
+Source1:	get_res.cpp
+Source2:	%{name}.po
+Patch0:		kcm-grub2-read-mode-from-file.patch
 BuildRequires:	gcc-c++
 BuildRequires:	kdelibs4-devel 
-BuildRequires:	libhd-devel
+BuildRequires:	pkgconfig(hwinfo)
 BuildRequires:	pkgconfig(ImageMagick)
+Requires:	grub2
 
 %description
 Smoothly integrated in KDE System Settings, it is the central place 
 for managing your GRUB2 configuration.
-
-Author(s):
-  Konstantinos Smanis <konstantinos.smanis@gmail.com>
-
 
 %prep
 %setup -q
@@ -41,13 +33,12 @@ g++ %{SOURCE1} -l hd -o %{getres}
 #%cmake_kde4 -d ..
 %cmake_kde4
 cd .. && %make
-#%make_jobs
 
 %install
 #%kde4_makeinstall -C build
 #kde_post_install
-#rm -fr %buildroot
-make -C build DESTDIR=%buildroot install
+#rm -fr %{buildroot}
+make -C build DESTDIR=%{buildroot} install
 %find_lang %{name}
 install -d %{buildroot}%{_sbindir}
 install -m 700 %{getres} %{buildroot}%{_sbindir}/%{getres}
@@ -65,10 +56,3 @@ install -m 700 %{getres} %{buildroot}%{_sbindir}/%{getres}
 %{_datadir}/polkit-1/actions/org.kde.kcontrol.kcmgrub2.policy
 %{_sbindir}/%{getres}
 
-
-%changelog
-* Fri Jul  27 2012 icedphoenix <icedphoenix@rosalab.ru>
-+ Commit: 30b8df1
-- graphical modes saved to file
-  
-  
