@@ -1,7 +1,6 @@
-diff -Naur kcm-grub2-0.5.8//src/helper/helper.cpp kcm-grub-new//src/helper/helper.cpp
---- kcm-grub2-0.5.8//src/helper/helper.cpp	2012-06-18 13:06:58.000000000 +0400
-+++ kcm-grub-new//src/helper/helper.cpp	2012-07-27 18:22:14.830328237 +0400
-@@ -36,10 +36,11 @@
+--- kcm-grub2-0.6.4/src/helper/helper.cpp.orig	2013-10-12 11:34:15.000000000 +0100
++++ kcm-grub2-0.6.4/src/helper/helper.cpp	2014-04-20 01:32:21.625388465 +0100
+@@ -33,10 +33,11 @@
  
  //Project
  #include "../config.h"
@@ -15,9 +14,9 @@ diff -Naur kcm-grub2-0.5.8//src/helper/helper.cpp kcm-grub-new//src/helper/helpe
 +using std::ifstream;
 +using std::string;
  
- Helper::Helper()
- {
-@@ -209,24 +210,20 @@
+ //The $PATH environment variable is emptied by D-Bus activation,
+ //so let's provide a sane default. Needed for os-prober to work.
+@@ -175,24 +176,20 @@
  {
      Q_UNUSED(args)
      ActionReply reply;
@@ -54,10 +53,9 @@ diff -Naur kcm-grub2-0.5.8//src/helper/helper.cpp kcm-grub-new//src/helper/helpe
      return reply;
  }
  ActionReply Helper::save(QVariantMap args)
-diff -Naur kcm-grub2-0.5.8//src/helper/kcmgrub2.actions kcm-grub-new//src/helper/kcmgrub2.actions
---- kcm-grub2-0.5.8//src/helper/kcmgrub2.actions	2012-06-18 13:06:58.000000000 +0400
-+++ kcm-grub-new//src/helper/kcmgrub2.actions	2012-07-27 18:33:43.148145232 +0400
-@@ -303,8 +303,7 @@
+--- kcm-grub2-0.6.4/src/helper/kcmgrub2.actions.orig	2013-10-12 11:34:15.000000000 +0100
++++ kcm-grub2-0.6.4/src/helper/kcmgrub2.actions	2014-04-20 01:32:21.625388465 +0100
+@@ -400,8 +400,7 @@
  Description[x-test]=xxAdministrator authorization is required to probe VESA BIOS Extensionsxx
  Description[zh_CN]=探测 VESA BIOS 扩展需要管理员权限
  Description[zh_TW]=偵測 VESA BIOS 延伸需要管理者權限
