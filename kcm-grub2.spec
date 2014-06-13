@@ -5,7 +5,7 @@
 Summary:	A KDE Control Module for configuring the GRUB2 bootloader
 Name:		kcm-grub2
 Version:	0.6.4
-Release:	2
+Release:	3
 License:	GPLv3+
 Url:		http://ksmanis.wordpress.com/projects/grub2-editor/
 Group:		Graphical desktop/KDE
