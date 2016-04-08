@@ -5,14 +5,17 @@
 Summary:	A KDE Control Module for configuring the GRUB2 bootloader
 Name:		kcm-grub2
 Version:	0.6.4
-Release:	2
+Release:	3
 License:	GPLv3+
 Url:		http://ksmanis.wordpress.com/projects/grub2-editor/
 Group:		Graphical desktop/KDE
 Source0:	%{name}-%{version}.tar.gz
 Source1:	get_res.cpp
 Source2:	%{name}.po
+Source3:	kcm-grub2-languages
 Patch0:		kcm-grub2-read-mode-from-file.patch
+Patch1:		kcm-grub2-language.patch
+Patch2:         kcm-grub2-set-default-utf8.patch
 BuildRequires:	gcc-c++
 BuildRequires:	kdelibs4-devel 
 BuildRequires:	pkgconfig(hwinfo)
@@ -42,6 +45,8 @@ make -C build DESTDIR=%{buildroot} install
 %find_lang %{name}
 install -d %{buildroot}%{_sbindir}
 install -m 700 %{getres} %{buildroot}%{_sbindir}/%{getres}
+mkdir -p %{buildroot}%{_localstatedir}/lib/mandriva/kde4-profiles/common/share/config
+install -m 644 %{SOURCE3} %{buildroot}%{_localstatedir}/lib/mandriva/kde4-profiles/common/share/config/languages
 
 %post
 %{_sbindir}/%{getres}
@@ -55,4 +60,5 @@ install -m 700 %{getres} %{buildroot}%{_sbindir}/%{getres}
 %{_datadir}/dbus-1/system-services/org.kde.kcontrol.kcmgrub2.service
 %{_datadir}/polkit-1/actions/org.kde.kcontrol.kcmgrub2.policy
 %{_sbindir}/%{getres}
+%{_localstatedir}/lib/mandriva/kde4-profiles/common/share/config/languages
 

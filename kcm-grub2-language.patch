@@ -1,0 +1,377 @@
+diff -ur kcm-grub2-0.6.4.read_file/src/helper/helper.cpp kcm-grub2-0.6.4.languages/src/helper/helper.cpp
+--- kcm-grub2-0.6.4.read_file/src/helper/helper.cpp	2016-04-08 12:42:49.325591781 +0100
++++ kcm-grub2-0.6.4.languages/src/helper/helper.cpp	2016-04-08 12:27:25.826668872 +0100
+@@ -23,6 +23,7 @@
+ 
+ //Qt
+ #include <QDir>
++#include <QtGlobal>
+ 
+ //KDE
+ #include <KDebug>
+@@ -49,12 +50,19 @@
+     qputenv("PATH", path.toLatin1());
+ }
+ 
+-ActionReply Helper::executeCommand(const QStringList &command)
++ActionReply Helper::executeCommand(const QStringList &command, QHash<QString, QString> &environment)
+ {
+     KProcess process;
+     process.setProgram(command);
+     process.setOutputChannelMode(KProcess::MergedChannels);
+ 
++    if (!environment.isEmpty()) {
++        QStringList grub_envKeys = environment.keys();
++        Q_FOREACH(const QString &envKey, grub_envKeys) {
++            process.setEnv(envKey, environment.value(envKey));
++        }
++    }
++
+     kDebug() << "Executing" << command.join(" ");
+     int exitCode = process.execute();
+ 
+@@ -95,6 +103,7 @@
+ ActionReply Helper::install(QVariantMap args)
+ {
+     ActionReply reply;
++    QHash<QString, QString> empty_hash;
+     QString partition = args.value("partition").toString();
+     QString mountPoint = args.value("mountPoint").toString();
+     bool mbrInstall = args.value("mbrInstall").toBool();
+@@ -106,7 +115,7 @@
+             reply.addData("errorDescription", i18nc("@info", "Failed to create temporary mount point."));
+             return reply;
+         }
+-        ActionReply mountReply = executeCommand(QStringList() << "mount" << partition << mountPoint);
++        ActionReply mountReply = executeCommand(QStringList() << "mount" << partition << mountPoint, empty_hash);
+         if (mountReply.failed()) {
+             return mountReply;
+         }
+@@ -119,7 +128,7 @@
+     } else {
+         grub_installCommand << "--force" << partition;
+     }
+-    return executeCommand(grub_installCommand);
++    return executeCommand(grub_installCommand, empty_hash);
+ }
+ ActionReply Helper::load(QVariantMap args)
+ {
+@@ -156,12 +165,13 @@
+ ActionReply Helper::probe(QVariantMap args)
+ {
+     ActionReply reply;
++    QHash<QString, QString> empty_hash;
+     QStringList mountPoints = args.value("mountPoints").toStringList();
+ 
+     QStringList grubPartitions;
+     HelperSupport::progressStep(0);
+     for (int i = 0; i < mountPoints.size(); i++) {
+-        ActionReply grub_probeReply = executeCommand(QStringList() << GRUB_PROBE_EXE << "-t" << "drive" << mountPoints.at(i));
++        ActionReply grub_probeReply = executeCommand(QStringList() << GRUB_PROBE_EXE << "-t" << "drive" << mountPoints.at(i), empty_hash);
+         if (grub_probeReply.failed()) {
+             return grub_probeReply;
+         }
+@@ -198,6 +208,7 @@
+     QString configFileName = GRUB_CONFIG;
+     QByteArray rawConfigFileContents = args.value("rawConfigFileContents").toByteArray();
+     QByteArray rawDefaultEntry = args.value("rawDefaultEntry").toByteArray();
++    QString resultLanguage = args.value("resultLanguage").toString();
+     bool memtest = args.value("memtest").toBool();
+ 
+     QFile::copy(configFileName, configFileName + ".original");
+@@ -221,12 +232,18 @@
+         QFile::setPermissions(GRUB_MEMTEST, permissions);
+     }
+ 
+-    ActionReply grub_mkconfigReply = executeCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU);
++    QHash<QString, QString> environment;
++    environment["LANG"] = resultLanguage;
++    environment["LANGUAGE"] = resultLanguage;
++
++    ActionReply grub_mkconfigReply = executeCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU, environment);
+     if (grub_mkconfigReply.failed()) {
+         return grub_mkconfigReply;
+     }
+ 
+-    ActionReply grub_set_defaultReply = executeCommand(QStringList() << GRUB_SET_DEFAULT_EXE << rawDefaultEntry);
++    environment.clear();
++
++    ActionReply grub_set_defaultReply = executeCommand(QStringList() << GRUB_SET_DEFAULT_EXE << rawDefaultEntry, environment);
+     if (grub_set_defaultReply.failed()) {
+         return grub_set_defaultReply;
+     }
+diff -ur kcm-grub2-0.6.4.read_file/src/helper/helper.h kcm-grub2-0.6.4.languages/src/helper/helper.h
+--- kcm-grub2-0.6.4.read_file/src/helper/helper.h	2013-10-12 11:34:15.000000000 +0100
++++ kcm-grub2-0.6.4.languages/src/helper/helper.h	2016-04-08 12:27:44.200279132 +0100
+@@ -28,7 +28,7 @@
+ public:
+     Helper();
+ private:
+-    ActionReply executeCommand(const QStringList &command);
++    ActionReply executeCommand(const QStringList &command,  QHash<QString, QString> &environment);
+ public Q_SLOTS:
+     ActionReply defaults(QVariantMap args);
+     ActionReply install(QVariantMap args);
+diff -ur kcm-grub2-0.6.4.read_file/src/kcm_grub2.cpp kcm-grub2-0.6.4.languages/src/kcm_grub2.cpp
+--- kcm-grub2-0.6.4.read_file/src/kcm_grub2.cpp	2013-10-12 11:34:15.000000000 +0100
++++ kcm-grub2-0.6.4.languages/src/kcm_grub2.cpp	2016-04-08 12:34:26.541904595 +0100
+@@ -25,6 +25,8 @@
+ #include <QDesktopWidget>
+ #include <QStandardItemModel>
+ #include <QTreeView>
++#include <QtGlobal>
++#include <QtAlgorithms>
+ 
+ //KDE
+ #include <KAboutData>
+@@ -100,6 +102,8 @@
+ #if HAVE_HD
+     readResolutions();
+ #endif
++    readLanguages();
++
+     QString grubDefault = unquoteWord(m_settings.value("GRUB_DEFAULT"));
+     if (grubDefault == QLatin1String("saved")) {
+         grubDefault = (m_env.value("saved_entry").isEmpty() ? "0" : m_env.value("saved_entry"));
+@@ -239,6 +243,23 @@
+         }
+     }
+ 
++    showLanguages();
++    QString grubLang = unquoteWord(m_settings.value("LANG"));
++    QString grubLanguage = unquoteWord(m_settings.value("LANGUAGE"));
++    if (!grubLang.isEmpty() && !grubLanguage.isEmpty()) {
++        if (grubLang.compare(grubLanguage)) {
++            kWarning() << "LANG and LANGUAGE should have the same value";
++        }
++        if (!m_languages.contains(grubLang)) {
++            kWarning() << "Invalid or unsupported LANG and LANGUAGE values";
++        }
++        ui->kcombobox_languages->setCurrentIndex(ui->kcombobox_languages->findData(grubLanguage));
++    } else if (!grubLang.isEmpty() || !grubLang.isEmpty()) {
++        kWarning() << "Both LANG and LANGUAGE should be used";
++    } else {
++        ui->kcombobox_languages->setCurrentIndex(ui->kcombobox_languages->findData("system"));
++    }
++
+     QString grubBackground = unquoteWord(m_settings.value("GRUB_BACKGROUND"));
+     ui->kurlrequester_background->setText(grubBackground);
+     ui->kpushbutton_preview->setEnabled(!grubBackground.isEmpty());
+@@ -446,6 +467,20 @@
+         }
+     }
+ 
++    if (m_dirtyBits.testBit(grubLanguageDirty)) {
++        QString language_id = ui->kcombobox_languages->itemData(ui->kcombobox_languages->currentIndex()).toString();
++        if (!language_id.isEmpty() && language_id.compare("system")) {
++            m_settings["LANG"] = language_id;
++            m_settings["LANGUAGE"] = language_id;
++
++            resultLanguage = language_id;
++        } else {
++            m_settings.remove("LANG");
++            m_settings.remove("LANGUAGE");
++            resultLanguage = qgetenv("LANG");
++        }
++    }
++
+     QString configFileContents;
+     QTextStream stream(&configFileContents, QIODevice::WriteOnly | QIODevice::Text);
+     QHash<QString, QString>::const_iterator it = m_settings.constBegin();
+@@ -461,6 +496,7 @@
+     if (m_dirtyBits.testBit(memtestDirty)) {
+         saveAction.addArgument("memtest", ui->checkBox_memtest->isChecked());
+     }
++    saveAction.addArgument("resultLanguage", resultLanguage);
+ #if KDE_IS_VERSION(4,6,0)
+     saveAction.setParentWidget(this);
+ #endif
+@@ -696,6 +732,11 @@
+     m_dirtyBits.setBit(grubDisableLinuxUuidDirty);
+     emit changed(true);
+ }
++void KCMGRUB2::slotGrubLanguageChanged()
++{
++    m_dirtyBits.setBit(grubLanguageDirty);
++    emit changed(true);
++}
+ 
+ void KCMGRUB2::slotUpdateSuggestions()
+ {
+@@ -923,6 +964,7 @@
+     connect(ui->klineedit_serial, SIGNAL(textEdited(QString)), this, SLOT(slotGrubSerialCommandChanged()));
+     connect(ui->klineedit_initTune, SIGNAL(textEdited(QString)), this, SLOT(slotGrubInitTuneChanged()));
+     connect(ui->checkBox_uuid, SIGNAL(clicked(bool)), this, SLOT(slotGrubDisableLinuxUuidChanged()));
++    connect(ui->kcombobox_languages, SIGNAL(activated(int)), this, SLOT(slotGrubLanguageChanged()));
+ 
+     connect(ui->kpushbutton_install, SIGNAL(clicked(bool)), this, SLOT(slotInstallBootloader()));
+ }
+@@ -1101,6 +1143,33 @@
+     m_resolutions = reply.data().value("gfxmodes").toStringList();
+ }
+ 
++void KCMGRUB2::readLanguages()
++{
++    m_languages.clear();
++
++    QFile file("/var/lib/mandriva/kde4-profiles/common/share/config/languages");
++    if(!file.open(QIODevice::ReadOnly)) {
++        QMessageBox::information(0, "error", file.errorString());
++    }
++
++    QTextStream in(&file);
++    in.setCodec("UTF-8");
++
++    int i = 1;
++    QString lang_id;
++    QString line;
++    while(!in.atEnd()) {
++        line = in.readLine();
++        if (i % 2) {
++            lang_id = line;
++        } else {
++            m_languages[lang_id] = line;
++        }
++        i++;
++    }
++    file.close();
++}
++
+ void KCMGRUB2::sortResolutions()
+ {
+     for (int i = 0; i < m_resolutions.size(); i++) {
+@@ -1141,6 +1210,17 @@
+     }
+ }
+ 
++void KCMGRUB2::showLanguages()
++{
++    ui->kcombobox_languages->clear();
++    ui->kcombobox_languages->addItem(i18n("System language"), "system");
++    QStringList keys = m_languages.keys();
++    qSort(keys);
++    Q_FOREACH(const QString &key, keys) {
++        ui->kcombobox_languages->addItem(m_languages.value(key), key);
++    }
++}
++
+ void KCMGRUB2::processReply(ActionReply &reply)
+ {
+     if (reply.type() == ActionReply::Success || reply.type() == ActionReply::KAuthError) {
+@@ -1291,7 +1371,9 @@
+         line = stream.readLine().trimmed();
+         if (line.startsWith(QLatin1String("GRUB_"))) {
+             m_settings[line.section('=', 0, 0)] = line.section('=', 1);
+-        }
++        }else if (line.startsWith(QLatin1String("LANG"))) {
++            m_settings[line.section('=', 0, 0)] = line.section('=', 1);
++        }
+     }
+ }
+ void KCMGRUB2::parseEnv(const QString &config)
+diff -ur kcm-grub2-0.6.4.read_file/src/kcm_grub2.h kcm-grub2-0.6.4.languages/src/kcm_grub2.h
+--- kcm-grub2-0.6.4.read_file/src/kcm_grub2.h	2013-10-12 11:34:15.000000000 +0100
++++ kcm-grub2-0.6.4.languages/src/kcm_grub2.h	2016-04-08 12:36:38.903191353 +0100
+@@ -78,6 +78,7 @@
+     void slotGrubSerialCommandChanged();
+     void slotGrubInitTuneChanged();
+     void slotGrubDisableLinuxUuidChanged();
++    void slotGrubLanguageChanged();
+ 
+     void slotUpdateSuggestions();
+     void slotTriggeredSuggestion(QAction *action);
+@@ -97,10 +98,13 @@
+     void readMemtest();
+     void readDevices();
+     void readResolutions();
++    void readLanguages();
+ 
+     void sortResolutions();
+     void showResolutions();
+ 
++    void showLanguages();
++
+     void processReply(ActionReply &reply);
+     QString parseTitle(const QString &line);
+     void parseEntries(const QString &config);
+@@ -132,16 +136,20 @@
+         grubSerialCommandDirty,
+         grubInitTuneDirty,
+         grubDisableLinuxUuidDirty,
++	grubLanguageDirty,
+         lastDirtyBit
+     };
+     QBitArray m_dirtyBits;
+ 
++    QString resultLanguage;
++
+     QList<Entry> m_entries;
+     QHash<QString, QString> m_settings;
+     QHash<QString, QString> m_env;
+     bool m_memtest;
+     bool m_memtestOn;
+     QHash<QString, QString> m_devices;
++    QHash<QString, QString> m_languages;
+     QStringList m_resolutions;
+ };
+ 
+diff -ur kcm-grub2-0.6.4.read_file/ui/kcm_grub2.ui kcm-grub2-0.6.4.languages/ui/kcm_grub2.ui
+--- kcm-grub2-0.6.4.read_file/ui/kcm_grub2.ui	2013-10-12 11:34:15.000000000 +0100
++++ kcm-grub2-0.6.4.languages/ui/kcm_grub2.ui	2016-04-08 12:40:42.782188965 +0100
+@@ -245,6 +245,29 @@
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
++            <widget class="QGroupBox" name="groupBox_languages">
++             <property name="title">
++              <string comment="@title:group">Language</string>
++             </property>
++             <layout class="QFormLayout" name="formLayout_13">
++              <item row="0" column="0">
++               <widget class="QLabel" name="label_languages">
++                <property name="text">
++                 <string comment="@label:listbox">Language:</string>
++                </property>
++               </widget>
++              </item>
++              <item row="0" column="1">
++               <widget class="KComboBox" name="kcombobox_languages">
++                <property name="sizeAdjustPolicy">
++                 <enum>QComboBox::AdjustToContents</enum>
++                </property>
++               </widget>
++              </item>
++             </layout>
++            </widget>
++       </item>
++       <item row="1" column="0">
+         <widget class="QGroupBox" name="groupBox_resolutions">
+          <property name="title">
+           <string comment="@title:group">Resolutions</string>
+@@ -281,7 +304,7 @@
+          </layout>
+         </widget>
+        </item>
+-       <item row="1" column="0">
++       <item row="2" column="0">
+         <widget class="QGroupBox" name="groupBox_colors">
+          <property name="title">
+           <string comment="@title:group">Colors</string>
+@@ -338,7 +361,7 @@
+          </layout>
+         </widget>
+        </item>
+-       <item row="2" column="0">
++       <item row="3" column="0">
+         <widget class="QGroupBox" name="groupBox_background">
+          <property name="title">
+           <string comment="@title:group Refers to the image shown behind the boot menu.">Background</string>
+@@ -385,7 +408,7 @@
+          </layout>
+         </widget>
+        </item>
+-       <item row="3" column="0">
++       <item row="4" column="0">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
