@@ -48,6 +48,7 @@ install -m 700 %{getres} %{buildroot}%{_sbindir}/%{getres}
 mkdir -p %{buildroot}%{_localstatedir}/lib/mandriva/kde4-profiles/common/share/config
 install -m 644 %{SOURCE3} %{buildroot}%{_localstatedir}/lib/mandriva/kde4-profiles/common/share/config/languages
 
+slangajio
 %post
 %{_sbindir}/%{getres}
 
