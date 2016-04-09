@@ -16,6 +16,10 @@ Source3:	kcm-grub2-languages
 Patch0:		kcm-grub2-read-mode-from-file.patch
 Patch1:		kcm-grub2-language.patch
 Patch2:         kcm-grub2-set-default-utf8.patch
+# helper always rebuilds the grub menu in C locale
+# as dbus helpers dont get the environment settings
+# this patches picks up the system locale from /etc/locale.conf
+Patch3:		kcm-grub2-system-lang.patch
 BuildRequires:	gcc-c++
 BuildRequires:	kdelibs4-devel 
 BuildRequires:	pkgconfig(hwinfo)

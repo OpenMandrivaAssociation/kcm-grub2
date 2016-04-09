@@ -1,0 +1,39 @@
+diff -ur kcm-grub2-0.6.4/src/helper/helper.cpp kcm-grub2-0.6.4.new/src/helper/helper.cpp
+--- kcm-grub2-0.6.4/src/helper/helper.cpp	2016-04-09 23:40:48.491466722 +0100
++++ kcm-grub2-0.6.4.new/src/helper/helper.cpp	2016-04-09 23:42:12.370461359 +0100
+@@ -232,9 +232,33 @@
+         QFile::setPermissions(GRUB_MEMTEST, permissions);
+     }
+ 
++
+     QHash<QString, QString> environment;
+-    environment["LANG"] = resultLanguage;
+-    environment["LANGUAGE"] = resultLanguage;
++
++    if(resultLanguage == "")
++    {
++       QFile file("/etc/locale.conf");
++       if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
++     
++
++          QString configStr = file.readAll();
++
++
++          QString line;
++          QTextStream stream(&configStr, QIODevice::ReadOnly | QIODevice::Text);
++          while (!stream.atEnd()) {
++             line = stream.readLine().trimmed();
++             environment[line.section('=', 0, 0)] = line.section('=', 1);
++          }
++       
++       }
++
++    }
++    else
++    {
++      environment["LANG"] = resultLanguage;
++      environment["LANGUAGE"] = resultLanguage;
++    }
+ 
+     ActionReply grub_mkconfigReply = executeCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU, environment);
+     if (grub_mkconfigReply.failed()) {
