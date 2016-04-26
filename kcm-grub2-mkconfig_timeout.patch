@@ -1,0 +1,124 @@
+--- kcm-grub2-0.6.4.languages/src/helper/helper.h.orig	2016-04-26 12:56:06.778309050 +0100
++++ kcm-grub2-0.6.4.languages/src/helper/helper.h	2016-04-26 12:56:22.211303402 +0100
+@@ -29,6 +29,8 @@
+     Helper();
+ private:
+     ActionReply executeCommand(const QStringList &command,  QHash<QString, QString> &environment);
++    ActionReply executeLongCommand(const QStringList &command,  QHash<QString, QString> &environment);
++
+ public Q_SLOTS:
+     ActionReply defaults(QVariantMap args);
+     ActionReply install(QVariantMap args);
+--- kcm-grub2-0.6.4.languages/src/helper/helper.cpp.orig	2016-04-26 12:51:28.601275079 +0100
++++ kcm-grub2-0.6.4.languages/src/helper/helper.cpp	2016-04-26 12:55:45.619039452 +0100
+@@ -76,6 +76,41 @@
+     return reply;
+ }
+ 
++ActionReply Helper::executeLongCommand(const QStringList &command, QHash<QString, QString> &environment)
++{
++    KProcess process;
++    process.setProgram(command);
++    process.setOutputChannelMode(KProcess::MergedChannels);
++
++    if (!environment.isEmpty()) {
++        QStringList grub_envKeys = environment.keys();
++        Q_FOREACH(const QString &envKey, grub_envKeys) {
++            process.setEnv(envKey, environment.value(envKey));
++        }
++    }
++
++    kDebug() << "Executing" << command.join(" ");
++    process.start();
++    bool finished = false; HelperSupport::progressStep(0); int i=0;
++    do { 
++      finished = process.waitForFinished(10000);
++    
++      HelperSupport::progressStep(i++); 
++       
++    } while(!finished);
++ 
++    int exitCode = process.exitCode();
++
++    ActionReply reply;
++    if (exitCode != 0) {
++        reply = ActionReply::HelperErrorReply;
++        reply.setErrorCode(exitCode);
++    }
++    reply.addData("command", command);
++    reply.addData("output", process.readAll());
++    return reply;
++}
++
+ ActionReply Helper::defaults(QVariantMap args)
+ {
+     Q_UNUSED(args)
+@@ -236,7 +271,7 @@
+     environment["LANG"] = resultLanguage;
+     environment["LANGUAGE"] = resultLanguage;
+ 
+-    ActionReply grub_mkconfigReply = executeCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU, environment);
++    ActionReply grub_mkconfigReply = executeLongCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU, environment);
+     if (grub_mkconfigReply.failed()) {
+         return grub_mkconfigReply;
+     }
+--- kcm-grub2-0.6.4.languages/src/kcm_grub2.h.orig	2016-04-26 13:55:09.608206812 +0100
++++ kcm-grub2-0.6.4.languages/src/kcm_grub2.h	2016-04-26 13:55:54.096922886 +0100
+@@ -23,10 +23,7 @@
+
+ //KDE
+ #include <KCModule>
+-namespace KAuth
+-{
+-    class ActionReply;
+-}
++#include <KAuth/ActionReply>
+ using namespace KAuth;
+
+ //Project
+@@ -50,6 +50,7 @@
+     virtual void load();
+     virtual void save();
+ private Q_SLOTS:
++    void saveComplete(ActionReply);
+     void slotRemoveOldEntries();
+     void slotGrubSavedefaultChanged();
+     void slotGrubHiddenTimeoutToggled(bool checked);
+--- kcm-grub2-0.6.4.languages/src/kcm_grub2.cpp.orig	2016-04-26 13:30:54.127510729 +0100
++++ kcm-grub2-0.6.4.languages/src/kcm_grub2.cpp	2016-04-26 14:12:49.796631790 +0100
+@@ -505,15 +505,27 @@
+         return;
+     }
+ 
+-    KProgressDialog progressDlg(this, i18nc("@title:window Verb (gerund). Refers to current status.", "Saving"), i18nc("@info:progress", "Saving GRUB settings..."));
+-    progressDlg.setAllowCancel(false);
+-    progressDlg.setModal(true);
+-    progressDlg.progressBar()->setMinimum(0);
+-    progressDlg.progressBar()->setMaximum(0);
+-    progressDlg.show();
+-    connect(saveAction.watcher(), SIGNAL(actionPerformed(ActionReply)), &progressDlg, SLOT(hide()));
++    KProgressDialog* progressDlg = new KProgressDialog(this, i18nc("@title:window Verb (gerund). Refers to current status.", "Saving"), i18nc("@info:progress", "Saving GRUB settings..."));
++    progressDlg->setAllowCancel(false);
++    progressDlg->setModal(true);
++    progressDlg->progressBar()->setMinimum(0);
++    progressDlg->progressBar()->setMaximum(0);
++    progressDlg->show();
++    connect(saveAction.watcher(), SIGNAL(actionPerformed(ActionReply)), progressDlg, SLOT(hide()));
++    connect(saveAction.watcher(), SIGNAL(actionPerformed(ActionReply)), this, SLOT(saveComplete(ActionReply)));
++    connect(saveAction.watcher(), SIGNAL(progressStep(int)), progressDlg->progressBar(), SLOT(setValue(int)));
+ 
+-    ActionReply reply = saveAction.execute();
++    saveAction.setExecutesAsync(true);
++
++    ActionReply earlyReply = saveAction.execute();
++
++    if(earlyReply.failed()) {
++       saveComplete(earlyReply);
++    }
++   
++}
++void KCMGRUB2::saveComplete(ActionReply reply)
++{
+     processReply(reply);
+     if (reply.succeeded()) {
+         KDialog *dialog = new KDialog(this, Qt::Dialog);

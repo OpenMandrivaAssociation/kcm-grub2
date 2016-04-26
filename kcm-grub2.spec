@@ -5,7 +5,7 @@
 Summary:	A KDE Control Module for configuring the GRUB2 bootloader
 Name:		kcm-grub2
 Version:	0.6.4
-Release:	3
+Release:	4
 License:	GPLv3+
 Url:		http://ksmanis.wordpress.com/projects/grub2-editor/
 Group:		Graphical desktop/KDE
@@ -16,6 +16,7 @@ Source3:	kcm-grub2-languages
 Patch0:		kcm-grub2-read-mode-from-file.patch
 Patch1:		kcm-grub2-language.patch
 Patch2:         kcm-grub2-set-default-utf8.patch
+Patch3:		kcm-grub2-mkconfig_timeout.patch
 BuildRequires:	gcc-c++
 BuildRequires:	kdelibs4-devel 
 BuildRequires:	pkgconfig(hwinfo)
