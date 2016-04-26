@@ -54,8 +54,8 @@
  {
      Q_UNUSED(args)
 @@ -236,7 +271,7 @@
-     environment["LANG"] = resultLanguage;
-     environment["LANGUAGE"] = resultLanguage;
+       environment["LANGUAGE"] = resultLanguage;
+     }
  
 -    ActionReply grub_mkconfigReply = executeCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU, environment);
 +    ActionReply grub_mkconfigReply = executeLongCommand(QStringList() << GRUB_MKCONFIG_EXE << "-o" << GRUB_MENU, environment);

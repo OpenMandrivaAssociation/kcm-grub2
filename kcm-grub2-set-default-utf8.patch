@@ -16,7 +16,7 @@ diff -ur kcm-grub2-0.6.4.languages/src/kcm_grub2.cpp kcm-grub2-0.6.4.set_default
 -    saveAction.addArgument("rawConfigFileContents", configFileContents.toLocal8Bit());
 -    saveAction.addArgument("rawDefaultEntry", !m_entries.isEmpty() ? grubDefault : m_settings.value("GRUB_DEFAULT").toLocal8Bit());
 +    saveAction.addArgument("rawConfigFileContents", configFileContents.toUtf8());
-+    saveAction.addArgument("rawDefaultEntry", !m_entries.isEmpty() ? grubDefault : m_settings.value("GRUB_DEFAULT").toUtf8());
++    saveAction.addArgument("rawDefaultEntry", !m_entries.isEmpty() ? grubDefault.toUtf8() : m_settings.value("GRUB_DEFAULT").toUtf8());
      if (m_dirtyBits.testBit(memtestDirty)) {
          saveAction.addArgument("memtest", ui->checkBox_memtest->isChecked());
      }
