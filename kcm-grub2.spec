@@ -26,7 +26,7 @@ for managing your GRUB2 configuration.
 %prep
 %setup -q
 cp -f %{SOURCE2} ./po/ru/kcm-grub2.po
-%apply_patches
+%autopatch -p1
 %{__cxx} %{SOURCE1} -l hd -o %{getres}
 
 %build
