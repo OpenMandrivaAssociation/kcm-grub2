@@ -7,7 +7,7 @@ Name:		kcm-grub2
 Version:	0.6.4
 Release:	8
 License:	GPLv3+
-Url:		http://ksmanis.wordpress.com/projects/grub2-editor/
+Url:		https://ksmanis.wordpress.com/projects/grub2-editor/
 Group:		Graphical desktop/KDE
 Source0:	%{name}-%{version}.tar.gz
 Source1:	get_res.cpp
