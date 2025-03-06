@@ -18,6 +18,7 @@ BuildRequires:	cmake(KF6Auth)
 BuildRequires:	cmake(KF6ConfigWidgets)
 BuildRequires:	cmake(KF6KIO)
 BuildRequires:	cmake(KF6Solid)
+BuildRequires:	cmake(KF6KCMUtils)
 BuildRequires:	cmake(packagekitqt6)
 BuildRequires:	grub2 grub2-efi
 BuildRequires:	grub2-extra
