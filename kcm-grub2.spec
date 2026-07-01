@@ -65,5 +65,5 @@ Unofficial KF6 port of the unofficial KF5 port.
 %{_datadir}/polkit-1/actions/org.kde.kcontrol.kcmgrub2.policy
 %{_datadir}/dbus-1/system.d/org.kde.kcontrol.kcmgrub2.conf
 %{_libdir}/libexec/kf6/kauth/kcmgrub2helper
-#{_libdir}/plugins/plasma/kcms/systemsettings_qwidgets/kcm_grub2.so
+%{_libdir}/qt6/plugins/plasma/kcms/systemsettings_qwidgets/kcm_grub2.so
 %{_datadir}/applications/kcm_grub2.desktop
