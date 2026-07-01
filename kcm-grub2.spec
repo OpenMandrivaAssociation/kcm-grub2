@@ -9,6 +9,7 @@ Group:		Graphical desktop/KDE
 # KF5 port: https://github.com/maz-1/grub2-editor
 Source0:	https://invent.kde.org/system/kcm-grub2/-/archive/work/nico/qt6/kcm-grub2-work-nico-qt6.tar.bz2
 BuildRequires:	cmake(ECM)
+BuildRequires:	pkgconfig(hwinfo)
 BuildRequires:	pkgconfig(Qt6Widgets)
 BuildRequires:	pkgconfig(Qt6DBus)
 BuildRequires:	pkgconfig(MagickCore)
@@ -20,6 +21,7 @@ BuildRequires:	cmake(KF6KIO)
 BuildRequires:	cmake(KF6Solid)
 BuildRequires:	cmake(KF6KCMUtils)
 BuildRequires:	cmake(packagekitqt6)
+BuildRequires:	cmake(VulkanHeaders)
 BuildRequires:	grub2 grub2-efi
 BuildRequires:	grub2-extra
 Requires:	grub2-extra
@@ -63,5 +65,5 @@ Unofficial KF6 port of the unofficial KF5 port.
 %{_datadir}/polkit-1/actions/org.kde.kcontrol.kcmgrub2.policy
 %{_datadir}/dbus-1/system.d/org.kde.kcontrol.kcmgrub2.conf
 %{_libdir}/libexec/kf6/kauth/kcmgrub2helper
-%{_libdir}/plugins/plasma/kcms/systemsettings_qwidgets/kcm_grub2.so
+#{_libdir}/plugins/plasma/kcms/systemsettings_qwidgets/kcm_grub2.so
 %{_datadir}/applications/kcm_grub2.desktop
