@@ -3,7 +3,7 @@
 Summary:	Plasma Systemsettings module for editing GRUB bootloader configuration
 Name:		kcm-grub2
 Version:	0.8.2%{?snap:~%{snap}}
-Release:	1
+Release:	2
 License:	GPLv2
 Group:		Graphical desktop/KDE
 # KF5 port: https://github.com/maz-1/grub2-editor
